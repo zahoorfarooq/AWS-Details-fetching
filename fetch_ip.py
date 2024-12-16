@@ -1,7 +1,8 @@
 import boto3
 import sys
+import os
 
-def fetch_ips(env_group, region='us-east-2'):
+def fetch_ips(INSTANCE_ATTRIBUTE, region='us-east-2'):
     ec2 = boto3.client('ec2', region_name=region)
     response = ec2.describe_instances(Filters=[{'Name': 'instance-state-name', 'Values': ['running']}])
 
@@ -10,13 +11,13 @@ def fetch_ips(env_group, region='us-east-2'):
     for reservation in response['Reservations']:
         for instance in reservation['Instances']:
             instance_name = next((tag['Value'] for tag in instance.get('Tags', []) if tag['Key'] == 'Name'), None)
-            if env_group == 'DT':
+            if INSTANCE_ATTRIBUTE == 'DT':
                 if instance_name and 'BASTION' in instance_name:
                     public_ip = instance.get('PublicIpAddress', 'N/A')
                     private_ip = instance.get('PrivateIpAddress', 'N/A')
                     instances_info.append((instance_name, public_ip, private_ip))
             else:
-                if instance_name and instance_name.startswith(env_group):
+                if instance_name and instance_name.startswith(INSTANCE_ATTRIBUTE):
                     public_ip = instance.get('PublicIpAddress', 'N/A')
                     private_ip = instance.get('PrivateIpAddress', 'N/A')
                     instances_info.append((instance_name, public_ip, private_ip))
@@ -35,19 +36,18 @@ def print_table(instances_info):
         print(f"{instance_name:<30} {public_ip:<20} {private_ip:<20}")
 
 def main():
-    # Ensure arguments are passed
-    if len(sys.argv) != 3:
-        print("Usage: python fetch_ips.py <EnvironmentGroup> <InstanceAttribute>")
-        sys.exit(1)
+    INSTANCE_ATTRIBUTE = os.getenv('EnvironmentGroup')
+    instance_attribute = os.getenv('INSTANCE_ATTRIBUTE')
 
-    env_group = sys.argv[1]
-    instance_attribute = sys.argv[2]
+    #INSTANCE_ATTRIBUTE = sys.argv[1]
+    #instance_attribute = sys.argv[2]
 
     if instance_attribute != 'fetch_ips':
         print("Invalid instance attribute.")
         sys.exit(1)
 
-    instances_info = fetch_ips(env_group)
+    INSTANCE_ATTRIBUTE = os.getenv('EnvironmentGroup')
+    instances_info = fetch_ips(INSTANCE_ATTRIBUTE)
     print_table(instances_info)
 
 if __name__ == '__main__':
