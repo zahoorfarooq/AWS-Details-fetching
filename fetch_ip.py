@@ -1,8 +1,8 @@
 import boto3
 import sys
-import os
+import argparse
 
-def fetch_ips(INSTANCE_ATTRIBUTE, region='us-east-2'):
+def fetch_ips(env_group, region='us-east-2'):
     ec2 = boto3.client('ec2', region_name=region)
     response = ec2.describe_instances(Filters=[{'Name': 'instance-state-name', 'Values': ['running']}])
 
@@ -11,13 +11,13 @@ def fetch_ips(INSTANCE_ATTRIBUTE, region='us-east-2'):
     for reservation in response['Reservations']:
         for instance in reservation['Instances']:
             instance_name = next((tag['Value'] for tag in instance.get('Tags', []) if tag['Key'] == 'Name'), None)
-            if INSTANCE_ATTRIBUTE == 'DT':
+            if env_group == 'DT':
                 if instance_name and 'BASTION' in instance_name:
                     public_ip = instance.get('PublicIpAddress', 'N/A')
                     private_ip = instance.get('PrivateIpAddress', 'N/A')
                     instances_info.append((instance_name, public_ip, private_ip))
             else:
-                if instance_name and instance_name.startswith(INSTANCE_ATTRIBUTE):
+                if instance_name and instance_name.startswith(env_group):
                     public_ip = instance.get('PublicIpAddress', 'N/A')
                     private_ip = instance.get('PrivateIpAddress', 'N/A')
                     instances_info.append((instance_name, public_ip, private_ip))
@@ -36,18 +36,21 @@ def print_table(instances_info):
         print(f"{instance_name:<30} {public_ip:<20} {private_ip:<20}")
 
 def main():
-    INSTANCE_ATTRIBUTE = os.getenv('EnvironmentGroup')
-    instance_attribute = os.getenv('INSTANCE_ATTRIBUTE')
+    parser = argparse.ArgumentParser(description="Getting_Parameters")
+    print("Call recieved from pipeline")
+    parser.add_argument('-e', '--EnvironmentGroup', action='store', type=str, required=True, help="Environment Group")
+    parser.add_argument('-i', '--InstanceAttribute', action='store', type=str, required=True, help="Instance Attribute")
+    
+    args = parser.parse_args()
+    env_group = args.EnvironmentGroup
+    instance_attribute = args.InstanceAttribute
+    print("value of instance attribute ", instance_attribute)
 
-    #INSTANCE_ATTRIBUTE = sys.argv[1]
-    #instance_attribute = sys.argv[2]
-
-    if instance_attribute != 'fetch_ips':
+    if instance_attribute != 'fetch_ip':
         print("Invalid instance attribute.")
         sys.exit(1)
 
-    INSTANCE_ATTRIBUTE = os.getenv('EnvironmentGroup')
-    instances_info = fetch_ips(INSTANCE_ATTRIBUTE)
+    instances_info = fetch_ips(env_group)
     print_table(instances_info)
 
 if __name__ == '__main__':
