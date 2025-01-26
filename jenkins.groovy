@@ -8,7 +8,7 @@ pipeline {
     }
 
     parameters {
-        choice(name: 'EnvironmentGroup', choices: ['ECOLAB','YODALAB', 'ANALYTICSLAB', 'FDNLAB','BATLAB', 'CAPLAB', 'DT'], description: 'Select the environment group')
+        choice(name: 'EnvironmentGroup', choices: ['Sprint', 'Staging',  'DT'], description: 'Select the environment group')
         choice(name: 'InstanceAttribute', choices: ['fetch_ip'], description: 'Select the instance attribute')
     }
 
@@ -19,7 +19,7 @@ pipeline {
                     dir("${WORKSPACE}\\Common") {
                         checkout changelog: true, poll: false, scm: [
                             $class: 'GitSCM', 
-                            branches: [[name: '*/bqe-devops']],
+                            branches: [[name: '*/branch_name']],
                             doGenerateSubmoduleConfigurations: false, 
                             extensions: [[$class: 'SparseCheckoutPaths', sparseCheckoutPaths: [[$class: 'SparseCheckoutPath', path: 'scripts/']]]],
                             submoduleCfg: [],
